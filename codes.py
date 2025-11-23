@@ -15,16 +15,14 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
 
 # --- Dosya Yükleme ---
-# BURAYA KENDİ YEREL DOSYA YOLUNUZU YAZIN
 # file_name = "C:/Users/ulasdeneme/Downloads/CDC_Wastewater_Data_for_Influenza_A.csv"
-# VEYA JUPYTER NOTEBOOK İLE AYNI KLASÖRDEYSE SADECE ADINI YAZIN:
 file_name = "C:/Users/ulasdeneme/Downloads/CDC_Wastewater_Data_for_Influenza_A.csv"
 
 df = pd.read_csv(file_name, low_memory=False)
 
 print("--- Veri Temizliği ve Özellik Mühendisliğine Başlanıyor ---")
 
-# --- BİRİNCİ BÖLÜM: TEMİZLİK VE MÜHENDSLİK (%45) ---
+# --- BİRİNCİ BÖLÜM: TEMİZLİK VE MÜHENDSLİK ---
 
 # ZAMAN BAZLI ÖZELLİKLERİ ÇIKARMA
 df['sample_collect_date'] = pd.to_datetime(df['sample_collect_date'], errors='coerce')
@@ -44,15 +42,15 @@ else:
     df['flowpop_lin_missing'] = 0 
     print("UYARI: 'pcr_target_flowpop_lin' sütunu bulunamadı, 'flowpop_lin_missing' 0 olarak ayarlandı.")
 
-# AYKIRI DEĞER YÖNETİMİ Logaritmik Dönüştürme
+
 df['log_population_served'] = np.log1p(df['population_served'])
 df['log_flow_rate'] = np.log1p(df['flow_rate'])
 
-# HEDEF VE BÖLGE BAZLI ÖZELLİKLERİ OLUŞTURMA
+
 df['influenza_a_detected'] = (df['pcr_target_avg_conc'] > 0).astype(int)
 df['log_pcr_target_conc'] = np.log1p(df['pcr_target_avg_conc'])
 
-# --- YENİ FE V2 - ADIM 1: ZAMAN SERİSİ GECİKME (LAG) ÖZELLİKLERİ ---
+
 print("Adım (Yeni FE V2): Zaman serisi Lag özellikleri (lag_1, lag_2) oluşturuluyor...")
 df = df.sort_values(by=['wwtp_jurisdiction', 'sample_collect_date'])
 df['log_conc_lag1'] = df.groupby('wwtp_jurisdiction')['log_pcr_target_conc'].shift(1)
@@ -94,7 +92,7 @@ else:
     print("UYARI: 'rec_eff_percent' sütunu bulunamadı.")
     df['rec_eff_percent'] = 0 
 
-# MÜKERRER KAYITLARI SİLME
+# TEKRAR EDEN DEĞERLERİ SİLME
 df.drop_duplicates(inplace=True)
 
 print("Adım (Encoding): 'population_group' (Small, Medium...) için 'population_group_encoded' (0, 1, 2...) sütunu ekleniyor...")
@@ -105,15 +103,13 @@ pop_kategorileri = pd.CategoricalDtype(
 df['population_group'] = df['population_group'].astype(pop_kategorileri)
 df['population_group_encoded'] = df['population_group'].cat.codes
 
-# --- YENİ FE V2 - ADIM 3: MANUEL ETKİLEŞİM ÖZELLİKLERİ ---
+
 print("Adım (Yeni FE V2): Manuel Etkileşim Özellikleri (Interaction) oluşturuluyor...")
 df['pop_x_flow'] = df['log_population_served'] * df['log_flow_rate']
 df['pop_x_rec_eff'] = df['log_population_served'] * df['rec_eff_percent']
 
 print("--- Veri Temizliği ve Özellik Mühendisliği Tamamlandı ---")
 
-
-# --- İKİNCİ BÖLÜM: KEŞİFSEL ANALİZ (%10) - TÜM GRAFİKLER ---
 print("\n--- Keşifsel Analizin (EDA) Ana Grafik Çıktıları ---")
 
 # 1. Standart Mevsimsel Eğilim (Zaman)
@@ -126,7 +122,7 @@ plt.title('Influenza A Konsantrasyonunun Haftalık Mevsimsel Eğilimi')
 plt.xlabel('Numune Toplama Tarihi')
 plt.ylabel('Ortalama Viral RNA Konsantrasyonu (copies/L)')
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.show() # GÖSTER
+plt.show() 
 
 # 2. Violin Plot
 plt.figure(figsize=(10, 6))
@@ -139,7 +135,7 @@ plt.title('Logaritmik Viral RNA Konsantrasyonunun Nüfus Grubuna Göre Dağılı
 plt.xlabel('Nüfus Grubu', fontsize=12)
 plt.ylabel('Log(1 + Viral RNA Konsantrasyonu)', fontsize=12)
 plt.grid(axis='y', linestyle='--', alpha=0.6)
-plt.show() # GÖSTER
+plt.show() 
 
 # 3. Aylık Pozitiflik Oranı
 monthly_data = df.dropna(subset=['collection_month'])
@@ -159,7 +155,7 @@ if not monthly_data.empty:
     plt.xlabel('Ay', fontsize=12)
     plt.ylabel('Tespit Oranı (%)', fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.6)
-    plt.show() # GÖSTER
+    plt.show() 
 
 # 4. Kategorik Dağılımlar
 categorical_cols_for_plot = ['collection_month', 'population_group', 'wwtp_jurisdiction']
@@ -174,7 +170,7 @@ for i, col in enumerate(categorical_cols_for_plot):
             sns.countplot(data=plot_df, y=col, order=top_10_categories, hue=col, legend=False)
         plt.title(f'{col} Dağılımı (Top 10)')
 plt.tight_layout()
-plt.show() # GÖSTER
+plt.show() 
 
 # --- ÜÇÜNCÜ BÖLÜM: KAYDETME ---
 output_file_name = "ulasfeatureseletion.csv"
@@ -324,7 +320,7 @@ plt.xlabel('Model', fontsize=12)
 plt.xticks(rotation=15)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show() # GÖSTER
+plt.show() 
 
 # 2. ROC AUC Karşılaştırması
 plt.figure(figsize=(10, 6))
@@ -335,7 +331,7 @@ plt.xlabel('Model', fontsize=12)
 plt.xticks(rotation=15)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show() # GÖSTER
+plt.show() 
 
 # 3. Average Precision Karşılaştırması
 plt.figure(figsize=(10, 6))
@@ -346,7 +342,7 @@ plt.xlabel('Model', fontsize=12)
 plt.xticks(rotation=15)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show() # GÖSTER
+plt.show() 
 
 # 4. Orijinal Modeller için ROC Eğrileri
 plt.figure(figsize=(10, 8))
@@ -363,7 +359,7 @@ plt.ylabel('True Positive Rate (TPR)')
 plt.title('ROC Eğrisi Karşılaştırması (Orijinal Modeller)')
 plt.legend(loc="lower right")
 plt.grid(True, linestyle='--', alpha=0.6)
-plt.show() # GÖSTER
+plt.show() 
 
 # 5. Orijinal Modeller için PR Eğrileri
 plt.figure(figsize=(10, 8))
@@ -377,9 +373,7 @@ plt.legend(loc="upper right")
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
-plt.show() # GÖSTER
-
-# --- RandomForest'a ait özellik önemi grafiği kaldırıldı ---
+plt.show() 
 
 print("\n!!! Veri Bilimi Projesi (Vize) Başarıyla Tamamlandı (Sadece GB ve Lineer Regresyon) !!!")
 print("Tüm 4 model senaryosu için karşılaştırma grafikleri ve analizler oluşturuldu.")
